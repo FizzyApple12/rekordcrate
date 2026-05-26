@@ -11,24 +11,14 @@
     flake-utils,
     nixpkgs,
     ...
-  } @ inputs:
+  }:
     flake-utils.lib.eachDefaultSystem (
       system: let
         pkgs = nixpkgs.legacyPackages.${system};
-      in rec {
+      in {
         devShells.default = pkgs.mkShell rec {
           nativeBuildInputs = [
-            pkgs.pkg-config
-            pkgs.systemd
-            pkgs.openssl
-            pkgs.cmake
             pkgs.git
-            pkgs.rpiboot
-            pkgs.minicom
-          ];
-          buildInputs = [
-            pkgs.clang
-            pkgs.llvmPackages.bintools
             pkgs.rustup
             pkgs.bash
             pkgs.yaml-language-server
@@ -43,7 +33,7 @@
             export PATH=$PATH:''${RUSTUP_HOME:-~/.rustup}/toolchains/$RUSTC_VERSION-x86_64-unknown-linux-gnu/bin/
           '';
 
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (buildInputs ++ nativeBuildInputs);
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath nativeBuildInputs;
         };
       }
     );
