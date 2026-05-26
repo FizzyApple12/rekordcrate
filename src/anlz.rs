@@ -402,9 +402,9 @@ pub struct TinyWaveformPreviewColumn {
 #[brw(big)]
 pub struct WaveformColorPreviewColumn {
     /// Unknown field (somehow encodes the "whiteness").
-    unknown1: u8,
+    pub unknown1: u8,
     /// Unknown field (somehow encodes the "whiteness").
-    unknown2: u8,
+    pub unknown2: u8,
     /// Sound energy in the bottom half of the frequency range (<10 KHz).
     pub energy_bottom_half_freq: u8,
     /// Sound energy in the bottom third of the frequency range.
