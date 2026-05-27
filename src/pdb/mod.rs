@@ -970,14 +970,14 @@ pub struct Album {
     /// Unknown field.
     unknown2: u32,
     /// ID of the artist row associated with this row.
-    artist_id: ArtistId,
+    pub artist_id: ArtistId,
     /// ID of this row.
-    id: AlbumId,
+    pub id: AlbumId,
     /// Unknown field.
     unknown3: u32,
     /// The offsets and its data and the end of this row
     #[brw(args(20, subtype.get_offset_size(), ()))]
-    offsets: OffsetArrayContainer<TrailingName, 1>,
+    pub offsets: OffsetArrayContainer<TrailingName, 1>,
 }
 
 impl PageHeapObject for Album {
@@ -1036,9 +1036,9 @@ impl PageHeapObject for Artist {
 #[brw(little)]
 pub struct Artwork {
     /// ID of this row.
-    id: ArtworkId,
+    pub id: ArtworkId,
     /// Path to the album art file.
-    path: DeviceSQLString,
+    pub path: DeviceSQLString,
 }
 
 impl PageHeapObject for Artwork {
@@ -1063,11 +1063,11 @@ pub struct Color {
     /// Unknown field.
     unknown2: u8,
     /// Numeric color ID
-    color: ColorIndex,
+    pub color: ColorIndex,
     /// Unknown field.
     unknown3: u16,
     /// User-defined name of the color.
-    name: DeviceSQLString,
+    pub name: DeviceSQLString,
 }
 
 impl PageHeapObject for Color {
@@ -1091,9 +1091,9 @@ impl PageHeapObject for Color {
 #[brw(little)]
 pub struct Genre {
     /// ID of this row.
-    id: GenreId,
+    pub id: GenreId,
     /// Name of the genre.
-    name: DeviceSQLString,
+    pub name: DeviceSQLString,
 }
 
 impl PageHeapObject for Genre {
@@ -1114,9 +1114,9 @@ impl PageHeapObject for Genre {
 #[brw(little)]
 pub struct HistoryPlaylist {
     /// ID of this row.
-    id: HistoryPlaylistId,
+    pub id: HistoryPlaylistId,
     /// Name of the playlist.
-    name: DeviceSQLString,
+    pub name: DeviceSQLString,
 }
 
 impl PageHeapObject for HistoryPlaylist {
@@ -1137,11 +1137,11 @@ impl PageHeapObject for HistoryPlaylist {
 #[brw(little)]
 pub struct HistoryEntry {
     /// ID of the track played at this position in the playlist.
-    track_id: TrackId,
+    pub track_id: TrackId,
     /// ID of the history playlist.
-    playlist_id: HistoryPlaylistId,
+    pub playlist_id: HistoryPlaylistId,
     /// Position within the playlist.
-    entry_index: u32,
+    pub entry_index: u32,
 }
 
 impl PageHeapObject for HistoryEntry {
@@ -1209,11 +1209,11 @@ impl PageHeapObject for History {
 #[brw(little)]
 pub struct Key {
     /// ID of this row.
-    id: KeyId,
+    pub id: KeyId,
     /// Apparently a second copy of the row ID.
     id2: u32,
     /// Name of the key.
-    name: DeviceSQLString,
+    pub name: DeviceSQLString,
 }
 
 impl PageHeapObject for Key {
@@ -1235,9 +1235,9 @@ impl PageHeapObject for Key {
 #[brw(little)]
 pub struct Label {
     /// ID of this row.
-    id: LabelId,
+    pub id: LabelId,
     /// Name of the record label.
-    name: DeviceSQLString,
+    pub name: DeviceSQLString,
 }
 
 impl PageHeapObject for Label {
@@ -1331,7 +1331,7 @@ pub struct ColumnEntry {
     // make sense as I don't think there are references to these
     // rows anywhere else. This could be a stable ID to identify
     // a category by in hardware (instead of by name).
-    id: u16,
+    pub id: u16,
     // Maybe a bitfield containing infos on sort order and which
     // columns are displayed.
     unknown0: u16,
@@ -1361,9 +1361,9 @@ impl PageHeapObject for ColumnEntry {
 /// String fields stored via the offset table in Track rows
 pub struct TrackStrings {
     /// International Standard Recording Code (ISRC), in mangled format.
-    isrc: DeviceSQLString,
+    pub isrc: DeviceSQLString,
     /// Lyricist of the track.
-    lyricist: DeviceSQLString,
+    pub lyricist: DeviceSQLString,
     /// Unknown string field containing a number.
     /// Appears to increment when the track is exported or modified in Rekordbox.
     unknown_string2: DeviceSQLString,
@@ -1372,36 +1372,36 @@ pub struct TrackStrings {
     /// Unknown string field.
     unknown_string4: DeviceSQLString,
     /// Track "message", a field in the Rekordbox UI.
-    message: DeviceSQLString,
+    pub message: DeviceSQLString,
     /// "Publish track information" in Rekordbox, value is either "ON" or empty string.
     /// Appears related to the Stagehand product to control DJ equipment remotely.
-    publish_track_information: DeviceSQLString,
+    pub publish_track_information: DeviceSQLString,
     /// Determines if hotcues should be autoloaded. Value is either "ON" or empty string.
-    autoload_hotcues: DeviceSQLString,
+    pub autoload_hotcues: DeviceSQLString,
     /// Unknown string field (usually empty).
     unknown_string5: DeviceSQLString,
     /// Unknown string field (usually empty).
     unknown_string6: DeviceSQLString,
     /// Date when the track was added to the Rekordbox collection (YYYY-MM-DD).
-    date_added: DeviceSQLString,
+    pub date_added: DeviceSQLString,
     /// Date when the track was released (YYYY-MM-DD).
-    release_date: DeviceSQLString,
+    pub release_date: DeviceSQLString,
     /// Name of the remix (if any).
-    mix_name: DeviceSQLString,
+    pub mix_name: DeviceSQLString,
     /// Unknown string field (usually empty).
     unknown_string7: DeviceSQLString,
     /// File path of the track analysis file.
-    analyze_path: DeviceSQLString,
+    pub analyze_path: DeviceSQLString,
     /// Date when the track analysis was performed (YYYY-MM-DD).
-    analyze_date: DeviceSQLString,
+    pub analyze_date: DeviceSQLString,
     /// Track comment.
-    comment: DeviceSQLString,
+    pub comment: DeviceSQLString,
     /// Track title.
     pub title: DeviceSQLString,
     /// Unknown string field (usually empty).
     unknown_string8: DeviceSQLString,
     /// Name of the file.
-    filename: DeviceSQLString,
+    pub filename: DeviceSQLString,
     /// Path of the file.
     pub file_path: DeviceSQLString,
 }
@@ -1478,11 +1478,11 @@ pub struct Track {
     /// Appears to always be 0x000c0700.
     bitmask: u32,
     /// Sample Rate in Hz.
-    sample_rate: u32,
+    pub sample_rate: u32,
     /// Composer of this track as artist row ID (non-zero if set).
-    composer_id: ArtistId,
+    pub composer_id: ArtistId,
     /// File size in bytes.
-    file_size: u32,
+    pub file_size: u32,
     /// Unknown field; observed values are effectively random.
     unknown2: u32,
     /// Unknown field; observed values: 19048, 64128, 31844.
@@ -1492,47 +1492,47 @@ pub struct Track {
     /// Appears to be the same for all tracks in a given DB.
     unknown4: u16,
     /// Artwork row ID for the cover art (non-zero if set),
-    artwork_id: ArtworkId,
+    pub artwork_id: ArtworkId,
     /// Key row ID for the cover art (non-zero if set).
-    key_id: KeyId,
+    pub key_id: KeyId,
     /// Artist row ID of the original performer (non-zero if set).
-    orig_artist_id: ArtistId,
+    pub orig_artist_id: ArtistId,
     /// Label row ID of the original performer (non-zero if set).
-    label_id: LabelId,
+    pub label_id: LabelId,
     /// Artist row ID of the remixer (non-zero if set).
-    remixer_id: ArtistId,
+    pub remixer_id: ArtistId,
     /// Bitrate of the track.
-    bitrate: u32,
+    pub bitrate: u32,
     /// Track number of the track.
-    track_number: u32,
+    pub track_number: u32,
     /// Track tempo in centi-BPM (= 1/100 BPM).
-    tempo: u32,
+    pub tempo: u32,
     /// Genre row ID for this track (non-zero if set).
-    genre_id: GenreId,
+    pub genre_id: GenreId,
     /// Album row ID for this track (non-zero if set).
-    album_id: AlbumId,
+    pub album_id: AlbumId,
     /// Artist row ID for this track (non-zero if set).
     pub artist_id: ArtistId,
     /// Row ID of this track (non-zero if set).
     pub id: TrackId,
     /// Disc number of this track (non-zero if set).
-    disc_number: u16,
+    pub disc_number: u16,
     /// Number of times this track was played.
-    play_count: u16,
+    pub play_count: u16,
     /// Year this track was released.
-    year: u16,
+    pub year: u16,
     /// Bits per sample of the track aduio file.
-    sample_depth: u16,
+    pub sample_depth: u16,
     /// Playback duration of this track in seconds (at normal speed).
-    duration: u16,
+    pub duration: u16,
     /// Unknown field, apparently always "0x29".
     unknown5: u16,
     /// Color row ID for this track (non-zero if set).
-    color: ColorIndex,
+    pub color: ColorIndex,
     /// User rating of this track (0 to 5 starts).
-    rating: u8,
+    pub rating: u8,
     /// Format of the file.
-    file_type: FileType,
+    pub file_type: FileType,
     /// offsets (strings) at row end
     #[brw(args(0x5C, subtype.get_offset_size(), ()))]
     pub offsets: OffsetArrayContainer<TrackStrings, 21>,
