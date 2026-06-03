@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 - Fix various compiler or clippy warnings with Rust 1.90
 - device: Load_settings, don't fail if settings files are missing
 - Build status badge/shield
+- anlz: Change type of `comment` field and capture trailing bytes
 
 ### Documentation
 
@@ -63,6 +64,7 @@ All notable changes to this project will be documented in this file.
 - pdb: Add History row type
 - xml: Publicise xml structs
 - xml: Publicise members
+- anlz: Add support for 3-band waveforms in 2EX files
 
 ### Refactor
 
