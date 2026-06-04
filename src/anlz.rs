@@ -234,37 +234,48 @@ pub struct Cue {
     unknown7: u32,
 }
 
-/// A fixed-length UTF-16BE string read from a specified number of bytes.
-/// Used for the `comment` field in the `ExtendedCue` section.
+/// A length-prefixed wide (UTF-16BE) string.
 ///
-/// Unlike [`NullWideString`], this does not scan for a NUL terminator; it reads
-/// exactly `len_comment` bytes and decodes them. This matches the Kaitai spec's
-/// `size: len_comment` approach.
+/// The binary representation is a `u32` length (in bytes, including the trailing
+/// NUL terminator) followed by that many bytes of UTF-16BE encoded text. The
+/// trailing NUL is stripped on read and appended on write.
+/// Its binary structure can be visualized as follows:
+///
+/// ```text
+/// | <length> (u32) | UTF-16BE encoded text | 0x0000 |
+///                   <------------------------------>
+///                            <length> bytes
+/// ```
+/// Used for the `comment` field in the `ExtendedCue` section.
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
-pub struct FixedUtf16String(pub String);
+pub struct LenPrefixedWideString(pub String);
 
-impl FixedUtf16String {
+impl LenPrefixedWideString {
     /// Returns the number of bytes required to encode this string as UTF-16BE
-    /// with a trailing NUL terminator.
+    /// with a trailing NUL terminator (excluding the length prefix).
     #[must_use]
     pub fn byte_len(&self) -> u32 {
-        (self.0.encode_utf16().count() as u32 + 1) * 2
+        if self.0.is_empty() {
+            0
+        } else {
+            (self.0.encode_utf16().count() as u32 + 1) * 2
+        }
     }
 }
 
-impl From<String> for FixedUtf16String {
+impl From<String> for LenPrefixedWideString {
     fn from(s: String) -> Self {
         Self(s)
     }
 }
 
-impl From<&str> for FixedUtf16String {
+impl From<&str> for LenPrefixedWideString {
     fn from(s: &str) -> Self {
         Self(s.to_string())
     }
 }
 
-impl std::ops::Deref for FixedUtf16String {
+impl std::ops::Deref for LenPrefixedWideString {
     type Target = str;
 
     fn deref(&self) -> &str {
@@ -272,15 +283,16 @@ impl std::ops::Deref for FixedUtf16String {
     }
 }
 
-impl BinRead for FixedUtf16String {
-    type Args<'a> = (u32,);
+impl BinRead for LenPrefixedWideString {
+    type Args<'a> = ();
 
     fn read_options<R: Read + Seek>(
         reader: &mut R,
-        _endian: Endian,
-        (len_comment,): Self::Args<'_>,
+        endian: Endian,
+        _args: Self::Args<'_>,
     ) -> BinResult<Self> {
-        let len = len_comment as usize;
+        let len: u32 = u32::read_options(reader, endian, ())?;
+        let len = len as usize;
         if len == 0 {
             return Ok(Self(String::new()));
         }
@@ -300,21 +312,25 @@ impl BinRead for FixedUtf16String {
     }
 }
 
-impl BinWrite for FixedUtf16String {
+impl BinWrite for LenPrefixedWideString {
     type Args<'a> = ();
 
     fn write_options<W: Write + Seek>(
         &self,
         writer: &mut W,
-        _endian: Endian,
+        endian: Endian,
         _args: Self::Args<'_>,
     ) -> BinResult<()> {
-        let mut bytes: Vec<u8> = Vec::new();
-        for cu in self.0.encode_utf16() {
-            bytes.extend_from_slice(&cu.to_be_bytes());
+        let bl = self.byte_len();
+        bl.write_options(writer, endian, ())?;
+        if bl > 0 {
+            let mut bytes: Vec<u8> = Vec::new();
+            for cu in self.0.encode_utf16() {
+                bytes.extend_from_slice(&cu.to_be_bytes());
+            }
+            bytes.extend_from_slice(&[0, 0]);
+            writer.write_all(&bytes)?;
         }
-        bytes.extend_from_slice(&[0, 0]);
-        writer.write_all(&bytes)?;
         Ok(())
     }
 }
@@ -359,15 +375,9 @@ pub struct ExtendedCue {
     pub loop_numerator: u16,
     /// Represents the loop size denominator (if this is a quantized loop).
     pub loop_denominator: u16,
-    /// Length of the comment string in bytes (including trailing NUL).
-    #[br(temp)]
-    #[bw(calc = comment.byte_len())]
-    len_comment: u32,
-    /// An UTF-16BE encoded string, with a trailing NUL (`0x0000`).
-    ///
-    /// Parsed as a fixed-length field of `len_comment` bytes (per the Kaitai spec).
-    #[br(args(len_comment))]
-    pub comment: FixedUtf16String,
+    /// An UTF-16BE encoded string with a leading `u32` length prefix and a
+    /// trailing NUL (`0x0000`).
+    pub comment: LenPrefixedWideString,
     /// Rekordbox hotcue color index.
     ///
     /// | Value  | Color                       |
@@ -456,7 +466,7 @@ pub struct ExtendedCue {
     ///
     /// Per the Kaitai spec, the entry may contain extra data beyond the known fields;
     /// any remaining bytes are captured here.
-    #[br(count = header.total_size.saturating_sub(68 + len_comment) as usize)]
+    #[br(count = header.total_size.saturating_sub(68 + comment.byte_len()) as usize)]
     pub trailing: Vec<u8>,
 }
 
@@ -1178,5 +1188,62 @@ impl ANLZ {
         }
 
         Ok(sections)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::util::testing::test_roundtrip;
+
+    #[test]
+    fn extended_cue_empty_comment_roundtrip() {
+        // Real ExtendedCue with an empty comment (len_comment=0), extracted
+        // from a file provided by @FizzyApple12
+        // This would have failed to parse before the fix that replaced
+        // NullWideString with LenPrefixedWideString for the `comment` field.
+        let raw = [
+            0x50, 0x43, 0x50, 0x32, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00,
+            0x00, 0x04, 0x01, 0x00, 0x03, 0xe8, 0x00, 0x04, 0x62, 0xf7, 0xff, 0xff, 0xff, 0xff,
+            0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x4d, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc1, 0x70, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x30,
+            0x77, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+
+        let cue = ExtendedCue {
+            header: Header {
+                kind: ContentKind::ExtendedCue,
+                size: 16,
+                total_size: 88,
+            },
+            hot_cue: 4,
+            cue_type: CueType::Point,
+            unknown1: 0,
+            unknown2: 1000,
+            time: 287479,
+            loop_time: 4294967295,
+            color: ColorIndex::None,
+            unknown3: 1,
+            unknown4: 0,
+            unknown5: 0,
+            loop_numerator: 0,
+            loop_denominator: 0,
+            comment: LenPrefixedWideString(String::new()),
+            hot_cue_color_index: 0,
+            hot_cue_color_rgb: (0x4d, 0x00, 0xff),
+            unknown6: 0,
+            unknown7: 0x00c17000,
+            unknown8: 0,
+            unknown9: 0,
+            unknown10: 0,
+            trailing: vec![
+                0x02, 0x30, 0x77, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
+            ],
+        };
+
+        test_roundtrip(&raw, cue);
     }
 }
